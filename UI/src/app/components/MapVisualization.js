@@ -1,113 +1,256 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import styles from "./MapVisualization.module.css";
 
 const MapVisualization = ({ route, locations, selectedStart, selectedEnd }) => {
   const canvasRef = useRef(null);
   const [hoveredLocation, setHoveredLocation] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [isLayoutReady, setIsLayoutReady] = useState(false);
 
-  // Map data - coordinates for each location (well-spaced campus layout)
-  const locationCoords = {
-    // Central Hub Area
-    "Main Hall": { x: 600, y: 400 },
+  const connections = useMemo(() => {
+    const map = {
+      "Main Hall": {
+        Library: 2,
+        Cafeteria: 3,
+        "Lab Block": 4,
+        Auditorium: 5,
+        "Admin Office": 3,
+        "Student Center": 4,
+      },
+      Library: {
+        "Main Hall": 2,
+        "Admin Office": 3,
+        "Study Rooms": 2,
+        "Computer Lab": 4,
+      },
+      "Lab Block": {
+        "Main Hall": 4,
+        Gym: 2,
+        "Computer Lab": 3,
+        "Engineering Building": 5,
+        "Science Building": 4,
+      },
+      "Computer Lab": {
+        Library: 4,
+        "Lab Block": 3,
+        "Engineering Building": 2,
+        "Study Rooms": 3,
+      },
+      "Engineering Building": {
+        "Lab Block": 5,
+        "Computer Lab": 2,
+        "Science Building": 3,
+        Workshop: 4,
+      },
+      "Science Building": {
+        "Lab Block": 4,
+        "Engineering Building": 3,
+        "Medical Center": 6,
+        "Research Center": 4,
+      },
+      Cafeteria: {
+        "Main Hall": 3,
+        "Student Center": 2,
+        Gym: 4,
+        Dormitory: 5,
+      },
+      "Student Center": {
+        "Main Hall": 4,
+        Cafeteria: 2,
+        Auditorium: 3,
+        Dormitory: 4,
+        "Sports Complex": 6,
+      },
+      Gym: {
+        "Lab Block": 2,
+        "Parking Lot": 3,
+        Cafeteria: 4,
+        "Sports Complex": 2,
+      },
+      "Sports Complex": {
+        Gym: 2,
+        "Student Center": 6,
+        "Parking Lot": 4,
+        Dormitory: 5,
+      },
+      "Admin Office": {
+        Library: 3,
+        "Main Hall": 3,
+        "Medical Center": 4,
+      },
+      "Medical Center": {
+        "Admin Office": 4,
+        "Science Building": 6,
+        Dormitory: 3,
+      },
+      Auditorium: {
+        "Main Hall": 5,
+        "Student Center": 3,
+      },
+      "Study Rooms": {
+        Library: 2,
+        "Computer Lab": 3,
+      },
+      Workshop: {
+        "Engineering Building": 4,
+      },
+      "Research Center": {
+        "Science Building": 4,
+      },
+      Dormitory: {
+        Cafeteria: 5,
+        "Student Center": 4,
+        "Sports Complex": 5,
+        "Medical Center": 3,
+        "Parking Lot": 6,
+      },
+      "Parking Lot": {
+        Gym: 3,
+        "Sports Complex": 4,
+        Dormitory: 6,
+      },
+    };
 
-    // Academic Zone (Top - North Campus)
-    "Study Rooms": { x: 200, y: 150 },
-    Library: { x: 400, y: 200 },
-    "Computer Lab": { x: 600, y: 150 },
-    "Engineering Building": { x: 800, y: 200 },
-    Workshop: { x: 900, y: 100 },
-    "Lab Block": { x: 500, y: 300 },
-    "Science Building": { x: 800, y: 350 },
-    "Research Center": { x: 1000, y: 250 },
+    const edges = [];
+    const processed = new Set();
 
-    // Administrative Zone (West Campus)
-    "Admin Office": { x: 200, y: 350 },
-    "Medical Center": { x: 100, y: 500 },
+    Object.keys(map).forEach((from) => {
+      Object.keys(map[from]).forEach((to) => {
+        const edgeKey = [from, to].sort().join("-");
+        if (!processed.has(edgeKey)) {
+          edges.push({
+            from,
+            to,
+            weight: map[from][to],
+          });
+          processed.add(edgeKey);
+        }
+      });
+    });
 
-    // Student Life Zone (East Campus)
-    "Student Center": { x: 800, y: 450 },
-    Auditorium: { x: 900, y: 400 },
+    return edges;
+  }, []);
 
-    // Recreation Zone (South Campus)
-    Cafeteria: { x: 500, y: 550 },
-    Gym: { x: 650, y: 650 },
-    "Sports Complex": { x: 900, y: 600 },
+  const locationCoords = useMemo(() => {
+    if (!locations || locations.length === 0) return {};
 
-    // Residential Zone (Southwest Campus)
-    Dormitory: { x: 300, y: 700 },
+    setIsLayoutReady(false);
 
-    // Parking Area (Southeast Campus)
-    "Parking Lot": { x: 750, y: 750 },
-  };
+    const nodes = {};
+    const edges = [];
 
-  // Connection data (edges with weights) - extracted from the graph structure
-  const connections = [
-    // Main Hall connections (central hub)
-    { from: "Main Hall", to: "Library", weight: 2 },
-    { from: "Main Hall", to: "Cafeteria", weight: 3 },
-    { from: "Main Hall", to: "Lab Block", weight: 4 },
-    { from: "Main Hall", to: "Auditorium", weight: 5 },
-    { from: "Main Hall", to: "Admin Office", weight: 3 },
-    { from: "Main Hall", to: "Student Center", weight: 4 },
+    locations.forEach((location, index) => {
+      if (location === "Main Hall") {
+        nodes[location] = { x: 700, y: 500, vx: 0, vy: 0 };
+      } else {
+        const angle = (index / locations.length) * 2 * Math.PI;
+        const ringRadius = 150 + (index % 3) * 200;
+        nodes[location] = {
+          x: 700 + ringRadius * Math.cos(angle) + (Math.random() - 0.5) * 300,
+          y: 500 + ringRadius * Math.sin(angle) + (Math.random() - 0.5) * 200,
+          vx: 0,
+          vy: 0,
+        };
+      }
+    });
 
-    // Library area connections
-    { from: "Library", to: "Admin Office", weight: 3 },
-    { from: "Library", to: "Study Rooms", weight: 2 },
-    { from: "Library", to: "Computer Lab", weight: 4 },
+    connections.forEach((conn) => {
+      edges.push({
+        source: conn.from,
+        target: conn.to,
+        weight: conn.weight,
+        idealDistance: 100 + conn.weight * conn.weight * 20,
+      });
+    });
 
-    // Academic building connections
-    { from: "Lab Block", to: "Gym", weight: 2 },
-    { from: "Lab Block", to: "Computer Lab", weight: 3 },
-    { from: "Lab Block", to: "Engineering Building", weight: 5 },
-    { from: "Lab Block", to: "Science Building", weight: 4 },
+    const iterations = 400;
+    const damping = 0.8;
+    const repulsionStrength = 50000; 
+    const attractionStrength = 0.02;
+    const centerForce = 0.0003;
 
-    { from: "Computer Lab", to: "Engineering Building", weight: 2 },
-    { from: "Computer Lab", to: "Study Rooms", weight: 3 },
+    for (let iter = 0; iter < iterations; iter++) {
+      // Calculate forces for each node
+      Object.keys(nodes).forEach((nodeA) => {
+        let fx = 0;
+        let fy = 0;
 
-    { from: "Engineering Building", to: "Science Building", weight: 3 },
-    { from: "Engineering Building", to: "Workshop", weight: 4 },
+        Object.keys(nodes).forEach((nodeB) => {
+          if (nodeA !== nodeB) {
+            const dx = nodes[nodeA].x - nodes[nodeB].x;
+            const dy = nodes[nodeA].y - nodes[nodeB].y;
+            const distance = Math.sqrt(dx * dx + dy * dy) || 1;
 
-    { from: "Science Building", to: "Medical Center", weight: 6 },
-    { from: "Science Building", to: "Research Center", weight: 4 },
+            const force =
+              repulsionStrength / Math.max(distance * distance, 100);
 
-    // Student life connections
-    { from: "Cafeteria", to: "Student Center", weight: 2 },
-    { from: "Cafeteria", to: "Gym", weight: 4 },
-    { from: "Cafeteria", to: "Dormitory", weight: 5 },
+            fx += (dx / distance) * force;
+            fy += (dy / distance) * force;
+          }
+        });
+        edges.forEach((edge) => {
+          if (edge.source === nodeA || edge.target === nodeA) {
+            const otherNode = edge.source === nodeA ? edge.target : edge.source;
+            if (nodes[otherNode]) {
+              const dx = nodes[otherNode].x - nodes[nodeA].x;
+              const dy = nodes[otherNode].y - nodes[nodeA].y;
+              const distance = Math.sqrt(dx * dx + dy * dy) || 1;
 
-    { from: "Student Center", to: "Auditorium", weight: 3 },
-    { from: "Student Center", to: "Dormitory", weight: 4 },
-    { from: "Student Center", to: "Sports Complex", weight: 6 },
+              const displacement = distance - edge.idealDistance;
+              const force = attractionStrength * displacement;
 
-    { from: "Gym", to: "Parking Lot", weight: 3 },
-    { from: "Gym", to: "Sports Complex", weight: 2 },
+              fx += (dx / distance) * force;
+              fy += (dy / distance) * force;
+            }
+          }
+        });
 
-    { from: "Sports Complex", to: "Parking Lot", weight: 4 },
-    { from: "Sports Complex", to: "Dormitory", weight: 5 },
+        const centerX = 700;
+        const centerY = 500;
+        fx += (centerX - nodes[nodeA].x) * centerForce;
+        fy += (centerY - nodes[nodeA].y) * centerForce;
 
-    // Administrative connections
-    { from: "Admin Office", to: "Medical Center", weight: 4 },
-    { from: "Medical Center", to: "Dormitory", weight: 3 },
+        nodes[nodeA].vx = (nodes[nodeA].vx + fx * 0.1) * damping;
+        nodes[nodeA].vy = (nodes[nodeA].vy + fy * 0.1) * damping;
 
-    // Parking connections
-    { from: "Dormitory", to: "Parking Lot", weight: 6 },
-  ];
+        nodes[nodeA].x += nodes[nodeA].vx;
+        nodes[nodeA].y += nodes[nodeA].vy;
+
+        nodes[nodeA].x = Math.max(50, Math.min(1150, nodes[nodeA].x));
+        nodes[nodeA].y = Math.max(50, Math.min(850, nodes[nodeA].y));
+      });
+    }
+
+    const result = {};
+    Object.keys(nodes).forEach((node) => {
+      result[node] = {
+        x: Math.round(nodes[node].x),
+        y: Math.round(nodes[node].y),
+      };
+    });
+
+    console.log(
+      `Generated layout for ${Object.keys(result).length} nodes with ${
+        edges.length
+      } edges`
+    );
+    console.log("Sample positions:", Object.entries(result).slice(0, 3));
+
+    setTimeout(() => setIsLayoutReady(true), 100);
+    return result;
+  }, [locations, connections]);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current || !locationCoords) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
 
-    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Set canvas size for expanded layout
-    canvas.width = 1200;
-    canvas.height = 900;
+    canvas.width = 1400;
+    canvas.height = 1000;
 
-    // Draw preview direct line between selected start and end (if no route yet)
     if (
       !route &&
       selectedStart &&
@@ -129,7 +272,6 @@ const MapVisualization = ({ route, locations, selectedStart, selectedEnd }) => {
         ctx.setLineDash([]); // Reset to solid line
         ctx.globalAlpha = 1;
 
-        // Calculate and show direct distance
         const directDistance = Math.sqrt(
           Math.pow(endCoords.x - startCoords.x, 2) +
             Math.pow(endCoords.y - startCoords.y, 2)
@@ -155,15 +297,25 @@ const MapVisualization = ({ route, locations, selectedStart, selectedEnd }) => {
       }
     }
 
-    // Draw connections (edges)
     connections.forEach((conn) => {
       const from = locationCoords[conn.from];
       const to = locationCoords[conn.to];
 
       if (from && to) {
-        // Check if this edge is part of the shortest path
         const isPathEdge =
           route && isEdgeInPath(conn.from, conn.to, route.path);
+
+        const isPreviewEdge =
+          !route &&
+          (selectedStart || selectedEnd) &&
+          (conn.from === selectedStart ||
+            conn.to === selectedStart ||
+            conn.from === selectedEnd ||
+            conn.to === selectedEnd);
+
+        const actualDistance = Math.sqrt(
+          Math.pow(to.x - from.x, 2) + Math.pow(to.y - from.y, 2)
+        );
 
         ctx.beginPath();
         ctx.moveTo(from.x, from.y);
@@ -171,39 +323,89 @@ const MapVisualization = ({ route, locations, selectedStart, selectedEnd }) => {
 
         if (isPathEdge) {
           ctx.strokeStyle = "#7c3aed";
-          ctx.lineWidth = 4;
+          ctx.lineWidth = 6;
           ctx.shadowColor = "#7c3aed";
-          ctx.shadowBlur = 8;
+          ctx.shadowBlur = 12;
+        } else if (isPreviewEdge) {
+          const weightNormalized = (conn.weight - 2) / (6 - 2);
+          const hue = 120 - weightNormalized * 60;
+          ctx.strokeStyle = `hsl(${hue}, 70%, 45%)`;
+          ctx.lineWidth = 3 + conn.weight * 0.3;
+          ctx.shadowColor = ctx.strokeStyle;
+          ctx.shadowBlur = 4;
+        } else if (route) {
+          const weightNormalized = (conn.weight - 2) / (6 - 2);
+          const hue = 120 - weightNormalized * 60;
+          ctx.strokeStyle = `hsl(${hue}, 20%, 75%)`;
+          ctx.lineWidth = 1 + conn.weight * 0.2;
+          ctx.shadowBlur = 0;
         } else {
-          ctx.strokeStyle = "#d1d5db";
-          ctx.lineWidth = 2;
+          const weightNormalized = (conn.weight - 2) / (6 - 2);
+          const hue = 120 - weightNormalized * 60;
+          ctx.strokeStyle = `hsl(${hue}, 60%, 50%)`;
+          ctx.lineWidth = 2 + conn.weight * 0.5;
           ctx.shadowBlur = 0;
         }
 
         ctx.stroke();
 
-        // Draw edge weight with background
         const midX = (from.x + to.x) / 2;
         const midY = (from.y + to.y) / 2;
 
-        // Draw weight background circle
         ctx.beginPath();
-        ctx.arc(midX, midY, 12, 0, 2 * Math.PI);
-        ctx.fillStyle = isPathEdge ? "#ffffff" : "#f9fafb";
+        const badgeRadius = isPathEdge ? 20 : isPreviewEdge ? 18 : 16;
+        ctx.arc(midX, midY, badgeRadius, 0, 2 * Math.PI);
+
+        if (isPathEdge) {
+          ctx.fillStyle = "#ffffff";
+          ctx.strokeStyle = "#7c3aed";
+        } else if (isPreviewEdge) {
+          const hue = 120 - (conn.weight - 2) * 20;
+          ctx.fillStyle = "#ffffff";
+          ctx.strokeStyle = `hsl(${hue}, 70%, 45%)`;
+        } else if (route) {
+          const hue = 120 - (conn.weight - 2) * 20;
+          ctx.fillStyle = `hsl(${hue}, 15%, 95%)`;
+          ctx.strokeStyle = `hsl(${hue}, 20%, 80%)`;
+        } else {
+          const hue = 120 - (conn.weight - 2) * 20;
+          ctx.fillStyle = `hsl(${hue}, 50%, 95%)`;
+          ctx.strokeStyle = `hsl(${hue}, 50%, 70%)`;
+        }
+
         ctx.fill();
-        ctx.strokeStyle = isPathEdge ? "#7c3aed" : "#d1d5db";
-        ctx.lineWidth = 1;
+        ctx.lineWidth = isPathEdge ? 2.5 : isPreviewEdge ? 2 : 1.5;
         ctx.stroke();
 
-        // Draw weight text
-        ctx.fillStyle = isPathEdge ? "#7c3aed" : "#6b7280";
-        ctx.font = "bold 11px Arial";
+        if (isPathEdge) {
+          ctx.fillStyle = "#7c3aed";
+          ctx.font = "bold 14px Arial";
+        } else if (isPreviewEdge) {
+          ctx.fillStyle = "#374151";
+          ctx.font = "bold 13px Arial";
+        } else if (route) {
+          ctx.fillStyle = "#9ca3af";
+          ctx.font = "11px Arial";
+        } else {
+          ctx.fillStyle = "#374151";
+          ctx.font = "bold 12px Arial";
+        }
+
         ctx.textAlign = "center";
-        ctx.fillText(conn.weight.toString(), midX, midY + 3);
+        ctx.fillText(conn.weight.toString(), midX, midY + 4);
+
+        if (
+          !isPathEdge &&
+          hoveredLocation &&
+          (conn.from === hoveredLocation || conn.to === hoveredLocation)
+        ) {
+          ctx.font = "8px Arial";
+          ctx.fillStyle = "#6b7280";
+          ctx.fillText(`${Math.round(actualDistance)}px`, midX, midY - 18);
+        }
       }
     });
 
-    // Draw locations (nodes)
     Object.entries(locationCoords).forEach(([location, coords]) => {
       const isStart =
         (route && route.start === location) || selectedStart === location;
@@ -211,27 +413,46 @@ const MapVisualization = ({ route, locations, selectedStart, selectedEnd }) => {
         (route && route.end === location) || selectedEnd === location;
       const isInPath = route && route.path.includes(location);
       const isSelected = selectedStart === location || selectedEnd === location;
+      const isConnectedToSelected =
+        !route &&
+        (selectedStart || selectedEnd) &&
+        connections.some(
+          (conn) =>
+            (conn.from === location &&
+              (conn.to === selectedStart || conn.to === selectedEnd)) ||
+            (conn.to === location &&
+              (conn.from === selectedStart || conn.from === selectedEnd))
+        );
 
-      // Draw node circle
+      const nodeRadius =
+        isStart || isEnd ? 35 : isInPath ? 32 : isConnectedToSelected ? 32 : 30;
+
       ctx.beginPath();
-      ctx.arc(coords.x, coords.y, 25, 0, 2 * Math.PI);
+      ctx.arc(coords.x, coords.y, nodeRadius, 0, 2 * Math.PI);
 
       if (isStart) {
-        ctx.fillStyle = route ? "#10b981" : "#22c55e"; // Brighter green for selected start
+        ctx.fillStyle = route ? "#10b981" : "#22c55e";
         ctx.shadowColor = route ? "#10b981" : "#22c55e";
-        ctx.shadowBlur = 12;
+        ctx.shadowBlur = 15;
       } else if (isEnd) {
-        ctx.fillStyle = route ? "#ef4444" : "#f87171"; // Brighter red for selected end
+        ctx.fillStyle = route ? "#ef4444" : "#f87171";
         ctx.shadowColor = route ? "#ef4444" : "#f87171";
-        ctx.shadowBlur = 12;
+        ctx.shadowBlur = 15;
       } else if (isInPath) {
         ctx.fillStyle = "#7c3aed";
         ctx.shadowColor = "#7c3aed";
-        ctx.shadowBlur = 8;
-      } else if (isSelected) {
-        ctx.fillStyle = "#fbbf24"; // Yellow for other selected locations
+        ctx.shadowBlur = 10;
+      } else if (isConnectedToSelected) {
+        ctx.fillStyle = "#fbbf24";
         ctx.shadowColor = "#fbbf24";
         ctx.shadowBlur = 8;
+      } else if (isSelected) {
+        ctx.fillStyle = "#fbbf24";
+        ctx.shadowColor = "#fbbf24";
+        ctx.shadowBlur = 8;
+      } else if (route) {
+        ctx.fillStyle = "#e5e7eb";
+        ctx.shadowBlur = 0;
       } else {
         ctx.fillStyle = "#f3f4f6";
         ctx.shadowBlur = 0;
@@ -239,34 +460,30 @@ const MapVisualization = ({ route, locations, selectedStart, selectedEnd }) => {
 
       ctx.fill();
 
-      // Draw node border
       ctx.strokeStyle =
         isStart || isEnd || isInPath || isSelected ? "#ffffff" : "#d1d5db";
-      ctx.lineWidth = isSelected && !route ? 3 : 2; // Thicker border for selected nodes
+      ctx.lineWidth = isSelected && !route ? 3 : 2;
       ctx.stroke();
-
-      // Draw location name
       ctx.fillStyle =
         isStart || isEnd || isInPath || isSelected ? "#ffffff" : "#374151";
-      ctx.font = "bold 11px Arial";
+      ctx.font = "bold 12px Arial";
       ctx.textAlign = "center";
       ctx.shadowBlur = 0;
 
-      // Split long location names
       const words = location.split(" ");
       if (words.length > 1) {
-        ctx.fillText(words[0], coords.x, coords.y - 3);
-        ctx.fillText(words[1], coords.x, coords.y + 8);
+        ctx.fillText(words[0], coords.x, coords.y - 4);
+        ctx.fillText(words[1], coords.x, coords.y + 10);
       } else {
-        ctx.fillText(location, coords.x, coords.y + 3);
+        ctx.fillText(location, coords.x, coords.y + 4);
       }
     });
 
-    // Draw path arrows if route exists
     if (route && route.path.length > 1) {
       drawPathArrows(ctx, route.path);
+      drawPathStepNumbers(ctx, route.path);
     }
-  }, [route, selectedStart, selectedEnd]);
+  }, [route, selectedStart, selectedEnd, locationCoords, connections]);
 
   const isEdgeInPath = (from, to, path) => {
     if (!path || path.length < 2) return false;
@@ -288,30 +505,47 @@ const MapVisualization = ({ route, locations, selectedStart, selectedEnd }) => {
       const to = locationCoords[path[i + 1]];
 
       if (from && to) {
-        // Calculate arrow position (closer to destination)
         const arrowX = from.x + 0.7 * (to.x - from.x);
         const arrowY = from.y + 0.7 * (to.y - from.y);
 
         // Calculate arrow angle
         const angle = Math.atan2(to.y - from.y, to.x - from.x);
 
-        // Draw arrow
         ctx.save();
         ctx.translate(arrowX, arrowY);
         ctx.rotate(angle);
 
         ctx.beginPath();
         ctx.moveTo(0, 0);
-        ctx.lineTo(-15, -8);
-        ctx.lineTo(-15, 8);
+        ctx.lineTo(-18, -10);
+        ctx.lineTo(-18, 10);
         ctx.closePath();
 
         ctx.fillStyle = "#7c3aed";
+        ctx.shadowColor = "#7c3aed";
+        ctx.shadowBlur = 8;
         ctx.fill();
 
         ctx.restore();
       }
     }
+  };
+
+  const drawPathStepNumbers = (ctx, path) => {
+    path.forEach((location, index) => {
+      const coords = locationCoords[location];
+      if (coords && index > 0 && index < path.length - 1) {
+        ctx.beginPath();
+        ctx.arc(coords.x + 25, coords.y - 25, 12, 0, 2 * Math.PI);
+        ctx.fillStyle = "#7c3aed";
+        ctx.fill();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 11px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText((index + 1).toString(), coords.x + 25, coords.y - 21);
+      }
+    });
   };
 
   const handleMouseMove = (event) => {
@@ -327,13 +561,12 @@ const MapVisualization = ({ route, locations, selectedStart, selectedEnd }) => {
 
     setMousePos({ x: event.clientX, y: event.clientY });
 
-    // Check if mouse is over any location
     let foundLocation = null;
     Object.entries(locationCoords).forEach(([location, coords]) => {
       const distance = Math.sqrt(
         Math.pow(mouseX - coords.x, 2) + Math.pow(mouseY - coords.y, 2)
       );
-      if (distance <= 25) {
+      if (distance <= 30) {
         foundLocation = location;
       }
     });
@@ -345,10 +578,31 @@ const MapVisualization = ({ route, locations, selectedStart, selectedEnd }) => {
     setHoveredLocation(null);
   };
 
+  const getRouteSegments = (path) => {
+    if (!path || path.length < 2) return "";
+
+    const segments = [];
+    for (let i = 0; i < path.length - 1; i++) {
+      const from = path[i];
+      const to = path[i + 1];
+      const connection = connections.find(
+        (conn) =>
+          (conn.from === from && conn.to === to) ||
+          (conn.from === to && conn.to === from)
+      );
+      if (connection) {
+        segments.push(`${from} →(${connection.weight})→ ${to}`);
+      }
+    }
+    return segments.join(" | ");
+  };
+
   return (
     <div className={styles.mapContainer}>
       <div className={styles.mapHeader}>
-        <h3>Campus Map</h3>
+        <h3>
+          Campus Map {!isLayoutReady && "(Calculating optimal layout...)"}
+        </h3>
         <div className={styles.mapLegend}>
           <div className={styles.legendItem}>
             <div
@@ -373,15 +627,6 @@ const MapVisualization = ({ route, locations, selectedStart, selectedEnd }) => {
               <span>Optimal Path</span>
             </div>
           )}
-          {!route && selectedStart && selectedEnd && (
-            <div className={styles.legendItem}>
-              <div
-                className={styles.legendColor}
-                style={{ backgroundColor: "#94a3b8", opacity: 0.6 }}
-              ></div>
-              <span>Direct Line</span>
-            </div>
-          )}
         </div>
       </div>
 
@@ -389,11 +634,19 @@ const MapVisualization = ({ route, locations, selectedStart, selectedEnd }) => {
         <canvas
           ref={canvasRef}
           className={styles.mapCanvas}
-          width={1200}
-          height={900}
+          width={1400}
+          height={1000}
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
+          style={{ opacity: isLayoutReady ? 1 : 0.7 }}
         />
+
+        {!isLayoutReady && (
+          <div className={styles.loadingOverlay}>
+            <div className={styles.loadingSpinner}></div>
+            <p>Positioning nodes based on connection weights...</p>
+          </div>
+        )}
 
         {hoveredLocation && (
           <div
@@ -464,6 +717,12 @@ const MapVisualization = ({ route, locations, selectedStart, selectedEnd }) => {
             </div>
             <div className={styles.routeDetail}>
               <strong>Algorithm Used:</strong> {route.algorithm}
+            </div>
+            <div className={styles.routeDetail}>
+              <strong>Total Steps:</strong> {route.path.length} locations
+            </div>
+            <div className={styles.routeDetail}>
+              <strong>Path Segments:</strong> {getRouteSegments(route.path)}
             </div>
           </div>
         )}
