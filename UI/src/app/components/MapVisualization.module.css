@@ -1,0 +1,172 @@
+.mapContainer {
+  width: 100%;
+  max-width: 1300px;
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.mapHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.mapHeader h3 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.mapLegend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.legendColor {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.canvasContainer {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  overflow: auto;
+  max-height: 600px;
+}
+
+.mapCanvas {
+  max-width: 100%;
+  height: auto;
+  cursor: crosshair;
+}
+
+.mapStats {
+  margin-top: 20px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.statItem {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.statItem:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.statValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.statLabel {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.routeInfo {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.routeDetail {
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.routeDetail:last-child {
+  margin-bottom: 0;
+}
+
+.routeDetail strong {
+  color: #111827;
+  font-weight: 600;
+}
+
+/* Tooltip */
+.tooltip {
+  position: fixed;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+}
+
+.tooltipHeader {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.tooltipContent {
+  font-size: 11px;
+  color: #e5e7eb;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .mapContainer {
+    padding: 16px;
+  }
+
+  .mapHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .mapLegend {
+    justify-content: flex-start;
+  }
+
+  .canvasContainer {
+    padding: 12px;
+  }
+
+  .mapCanvas {
+    max-width: calc(100vw - 80px);
+  }
+}
