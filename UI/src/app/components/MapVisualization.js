@@ -716,9 +716,6 @@ const MapVisualization = ({ route, locations, selectedStart, selectedEnd }) => {
               <strong>Optimal Route:</strong> {route.path.join(" → ")}
             </div>
             <div className={styles.routeDetail}>
-              <strong>Algorithm Used:</strong> {route.algorithm}
-            </div>
-            <div className={styles.routeDetail}>
               <strong>Total Steps:</strong> {route.path.length} locations
             </div>
             <div className={styles.routeDetail}>
