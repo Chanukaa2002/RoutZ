@@ -1,5 +1,6 @@
 import { useState } from "react";
 import styles from "./Demo.module.css";
+import Image from "next/image";
 
 export default function Demo({ onDemoSelect }) {
   const [isVisible, setIsVisible] = useState(true);
@@ -21,7 +22,14 @@ export default function Demo({ onDemoSelect }) {
   return (
     <div className={styles.demoContainer}>
       <div className={styles.demoHeader}>
-        <span className={styles.demoIcon}>🚀</span>
+        <span className={styles.demoIcon}>
+          <Image
+          src="/demo.gif"
+          alt="Demo Icon"
+          width={35}
+          height={35}
+        />
+        </span>
         <span>Try a demo route</span>
         <button
           className={styles.closeButton}

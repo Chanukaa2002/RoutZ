@@ -4,6 +4,7 @@ import styles from "./page_new.module.css";
 import LoadingSpinner from "./components/LoadingSpinner";
 import Demo from "./components/Demo";
 import MapVisualization from "./components/MapVisualization";
+import Image from "next/image";
 
 const API_BASE_URL = "http://localhost:5000/api";
 
@@ -183,7 +184,14 @@ export default function Home() {
       <div className={styles.sidebar}>
         <div className={styles.header}>
           <div className={styles.logo}>
-            <span className={styles.logoIcon}>✨</span>
+            <span className={styles.logoIcon}>
+              <Image
+                src="/nav.gif" // file stored in public/clock.svg
+                alt="RoutZ Icon"
+                width={45}
+                height={45}
+              />
+            </span>
             <span className={styles.logoText}>RoutZ</span>
           </div>
         </div>
@@ -196,7 +204,6 @@ export default function Home() {
           {(startLocation || endLocation) && (
             <div className={styles.selectionPreview}>
               <div className={styles.previewHeader}>
-                <span className={styles.previewIcon}>👁️</span>
                 <span>Current Selection</span>
               </div>
               <div className={styles.previewContent}>
@@ -216,7 +223,7 @@ export default function Home() {
                   endLocation &&
                   startLocation !== endLocation && (
                     <div className={styles.previewStatus}>
-                      Ready to find path! ✨
+                      Ready to find path! 
                     </div>
                   )}
               </div>
@@ -225,7 +232,6 @@ export default function Home() {
 
           <div className={styles.formGroup}>
             <div className={styles.inputGroup}>
-              <span className={styles.inputIcon}>📍</span>
               <label className={styles.inputLabel}>Start</label>
               <select
                 className={styles.select}
@@ -242,7 +248,6 @@ export default function Home() {
             </div>
 
             <div className={styles.inputGroup}>
-              <span className={styles.inputIcon}>🏁</span>
               <label className={styles.inputLabel}>End</label>
               <select
                 className={styles.select}
@@ -267,7 +272,7 @@ export default function Home() {
             {loading ? (
               <LoadingSpinner size="small" />
             ) : (
-              <span className={styles.buttonIcon}>🔍</span>
+              <span className={styles.buttonIcon}></span>
             )}
             {loading ? "Finding..." : "Find Shortest Path"}
           </button>
@@ -275,7 +280,14 @@ export default function Home() {
           {/* History & Controls */}
           <div className={styles.historyControls}>
             <h3 className={styles.historyTitle}>
-              <span className={styles.historyIcon}>🕒</span>
+              <span className={styles.historyIcon}>
+                <Image
+                  src="/clock.gif"
+                  alt="History Icon"
+                  width={35}
+                  height={35}
+                />
+              </span>
               History & Controls
             </h3>
 
@@ -288,7 +300,6 @@ export default function Home() {
                 disabled={!canUndo || loading}
                 title={canUndo ? "Undo Last Search" : "No searches to undo"}
               >
-                <span className={styles.buttonIcon}>↶</span>
                 Undo Last Search
               </button>
 
@@ -302,7 +313,6 @@ export default function Home() {
                   historyCount > 0 ? "Clear History" : "No history to clear"
                 }
               >
-                <span className={styles.buttonIcon}>🗑️</span>
                 Clear History
               </button>
             </div>
@@ -313,7 +323,6 @@ export default function Home() {
           {route && (
             <div className={styles.routeResult}>
               <div className={styles.routeHeader}>
-                <span className={styles.routeIcon}>📋</span>
                 <span>Your Route</span>
                 <button className={styles.clearButton} onClick={clearRoute}>
                   ✕
@@ -363,7 +372,6 @@ export default function Home() {
                   ))
               ) : (
                 <div className={styles.noHistory}>
-                  <span className={styles.noHistoryIcon}>📋</span>
                   No routes searched yet
                   <p>Your search history will appear here</p>
                 </div>
