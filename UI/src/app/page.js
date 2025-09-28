@@ -6,7 +6,8 @@ import Demo from "./components/Demo";
 import MapVisualization from "./components/MapVisualization";
 import Image from "next/image";
 
-const API_BASE_URL = "http://localhost:5000/api";
+// const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = "https://rout-z-bjil.vercel.app/api";
 
 export default function Home() {
   const [startLocation, setStartLocation] = useState("");
