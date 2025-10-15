@@ -11,8 +11,19 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+
+let app = null;
+let auth = null;
+if (typeof window !== "undefined") {
+  // Only initialize Firebase on the client
+  if (!global._firebaseApp) {
+    app = initializeApp(firebaseConfig);
+    global._firebaseApp = app;
+  } else {
+    app = global._firebaseApp;
+  }
+  auth = getAuth(app);
+}
 
 const MapAuthContext = createContext();
 
@@ -25,7 +36,9 @@ export function MapAuthProvider({ children }) {
   const [idToken, setIdToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
+
   useEffect(() => {
+    if (!auth) return;
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
