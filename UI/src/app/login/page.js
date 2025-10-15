@@ -11,6 +11,8 @@ import Link from "next/link";
 import { MapAuthProvider, useMapAuth } from "../components/MapAuthProvider";
 import styles from "../components/Auth.module.css";
 
+export const dynamic = 'force-dynamic';
+
 function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

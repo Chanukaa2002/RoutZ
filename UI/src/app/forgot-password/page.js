@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { MapAuthProvider, useMapAuth } from "../components/MapAuthProvider";
 import styles from "../components/Auth.module.css";
 
+export const dynamic = 'force-dynamic';
+
 function ForgotPasswordContent() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");

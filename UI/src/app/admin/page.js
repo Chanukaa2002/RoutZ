@@ -6,6 +6,8 @@ import MapManager from "../components/MapManager";
 import { signOut } from "firebase/auth";
 import styles from "./admin.module.css";
 
+export const dynamic = 'force-dynamic';
+
 function AdminContent() {
   const { user, idToken, loading, auth } = useMapAuth();
   const router = useRouter();
