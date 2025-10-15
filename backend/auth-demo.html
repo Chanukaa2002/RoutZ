@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RoutZ - Admin Authentication Demo</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+      .container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        padding: 40px;
+        max-width: 500px;
+        width: 100%;
+      }
+      h1 {
+        color: #333;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      .subtitle {
+        color: #666;
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 14px;
+      }
+      .tab-buttons {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 30px;
+      }
+      .tab-btn {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        background: #f0f0f0;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s;
+      }
+      .tab-btn.active {
+        background: #667eea;
+        color: white;
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+      }
+      .form-group {
+        margin-bottom: 20px;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        color: #333;
+        font-weight: 600;
+        font-size: 14px;
+      }
+      input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+      }
+      input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+      .btn {
+        width: 100%;
+        padding: 14px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-top: 10px;
+      }
+      .btn-primary {
+        background: #667eea;
+        color: white;
+      }
+      .btn-primary:hover {
+        background: #5568d3;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+      }
+      .btn-google {
+        background: #fff;
+        color: #333;
+        border: 2px solid #e0e0e0;
+      }
+      .btn-google:hover {
+        background: #f8f8f8;
+        border-color: #667eea;
+      }
+      .btn-github {
+        background: #333;
+        color: white;
+      }
+      .btn-github:hover {
+        background: #24292e;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+      }
+      .divider {
+        display: flex;
+        align-items: center;
+        margin: 25px 0;
+        color: #999;
+        font-size: 14px;
+      }
+      .divider::before,
+      .divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: #e0e0e0;
+      }
+      .divider span {
+        padding: 0 15px;
+      }
+      .message {
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        display: none;
+      }
+      .message.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .message.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .message.show {
+        display: block;
+      }
+      .user-info {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+        display: none;
+      }
+      .user-info.show {
+        display: block;
+      }
+      .user-info h3 {
+        margin-bottom: 10px;
+        color: #667eea;
+      }
+      .user-info p {
+        margin: 5px 0;
+        color: #666;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔐 RoutZ Admin Portal</h1>
+      <p class="subtitle">Secure Authentication System</p>
+
+      <div id="message" class="message"></div>
+
+      <div class="tab-buttons">
+        <button class="tab-btn active" onclick="showTab('login')">Login</button>
+        <button class="tab-btn" onclick="showTab('signup')">Sign Up</button>
+        <button class="tab-btn" onclick="showTab('forgot')">
+          Forgot Password
+        </button>
+      </div>
+
+      <!-- Login Tab -->
+      <div id="login" class="tab-content active">
+        <form onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label>Email</label>
+            <input
+              type="email"
+              id="login-email"
+              placeholder="admin@example.com"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input
+              type="password"
+              id="login-password"
+              placeholder="Enter your password"
+              required
+            />
+          </div>
+          <button type="submit" class="btn btn-primary">Login</button>
+        </form>
+
+        <div class="divider"><span>OR</span></div>
+
+        <button class="btn btn-google" onclick="handleGoogleSignIn()">
+          🔍 Continue with Google
+        </button>
+        <button class="btn btn-github" onclick="handleGithubSignIn()">
+          💻 Continue with GitHub
+        </button>
+      </div>
+
+      <!-- Sign Up Tab -->
+      <div id="signup" class="tab-content">
+        <form onsubmit="handleSignup(event)">
+          <div class="form-group">
+            <label>Display Name</label>
+            <input
+              type="text"
+              id="signup-name"
+              placeholder="John Doe"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input
+              type="email"
+              id="signup-email"
+              placeholder="admin@example.com"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input
+              type="password"
+              id="signup-password"
+              placeholder="At least 6 characters"
+              required
+            />
+          </div>
+          <button type="submit" class="btn btn-primary">Create Account</button>
+        </form>
+      </div>
+
+      <!-- Forgot Password Tab -->
+      <div id="forgot" class="tab-content">
+        <form onsubmit="handleForgotPassword(event)">
+          <div class="form-group">
+            <label>Email</label>
+            <input
+              type="email"
+              id="forgot-email"
+              placeholder="admin@example.com"
+              required
+            />
+          </div>
+          <button type="submit" class="btn btn-primary">Send Reset Link</button>
+        </form>
+      </div>
+
+      <!-- User Info Display -->
+      <div id="user-info" class="user-info">
+        <h3>✅ Login Successful!</h3>
+        <p><strong>User ID:</strong> <span id="user-uid"></span></p>
+        <p><strong>Email:</strong> <span id="user-email"></span></p>
+        <p><strong>Display Name:</strong> <span id="user-name"></span></p>
+      </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+      import {
+        getAuth,
+        signInWithPopup,
+        GoogleAuthProvider,
+        GithubAuthProvider,
+      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+      // Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyB8x1Uzl518GL0TcAIFAZxgYqK7SP8NTdk",
+        authDomain: "routz-26b7e.firebaseapp.com",
+        projectId: "routz-26b7e",
+        storageBucket: "routz-26b7e.firebasestorage.app",
+        messagingSenderId: "876265950393",
+        appId: "1:876265950393:web:86e6e33239f3b52abb1f68",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const googleProvider = new GoogleAuthProvider();
+      const githubProvider = new GithubAuthProvider();
+
+      // Make these available globally
+      window.firebaseAuth = auth;
+      window.googleProvider = googleProvider;
+      window.githubProvider = githubProvider;
+      window.signInWithPopup = signInWithPopup;
+    </script>
+
+    <script>
+      const API_URL = "http://localhost:5001/api/auth";
+
+      function showTab(tabName) {
+        // Hide all tabs
+        document.querySelectorAll(".tab-content").forEach((tab) => {
+          tab.classList.remove("active");
+        });
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+          btn.classList.remove("active");
+        });
+
+        // Show selected tab
+        document.getElementById(tabName).classList.add("active");
+        event.target.classList.add("active");
+
+        // Hide message and user info
+        hideMessage();
+        document.getElementById("user-info").classList.remove("show");
+      }
+
+      function showMessage(message, isSuccess = true) {
+        const messageEl = document.getElementById("message");
+        messageEl.textContent = message;
+        messageEl.className = `message show ${isSuccess ? "success" : "error"}`;
+
+        // Auto hide after 5 seconds
+        setTimeout(() => hideMessage(), 5000);
+      }
+
+      function hideMessage() {
+        document.getElementById("message").classList.remove("show");
+      }
+
+      function showUserInfo(user) {
+        document.getElementById("user-uid").textContent = user.uid;
+        document.getElementById("user-email").textContent = user.email;
+        document.getElementById("user-name").textContent =
+          user.displayName || "N/A";
+        document.getElementById("user-info").classList.add("show");
+      }
+
+      // Login
+      async function handleLogin(event) {
+        event.preventDefault();
+        const email = document.getElementById("login-email").value;
+        const password = document.getElementById("login-password").value;
+
+        try {
+          const response = await fetch(`${API_URL}/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            console.log("✅ Login successful:", data);
+            showMessage("Login successful! Welcome back.");
+            showUserInfo(data.user);
+          } else {
+            showMessage(data.message, false);
+          }
+        } catch (error) {
+          console.error("❌ Login error:", error);
+          showMessage("An error occurred during login.", false);
+        }
+      }
+
+      // Sign Up
+      async function handleSignup(event) {
+        event.preventDefault();
+        const displayName = document.getElementById("signup-name").value;
+        const email = document.getElementById("signup-email").value;
+        const password = document.getElementById("signup-password").value;
+
+        try {
+          const response = await fetch(`${API_URL}/signup`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password, displayName }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            console.log("✅ Signup successful:", data);
+            showMessage("Account created successfully! You can now login.");
+            showUserInfo(data.user);
+          } else {
+            showMessage(data.message, false);
+          }
+        } catch (error) {
+          console.error("❌ Signup error:", error);
+          showMessage("An error occurred during signup.", false);
+        }
+      }
+
+      // Forgot Password
+      async function handleForgotPassword(event) {
+        event.preventDefault();
+        const email = document.getElementById("forgot-email").value;
+
+        try {
+          const response = await fetch(`${API_URL}/forgot-password`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            console.log("✅ Password reset email sent");
+            showMessage("Password reset email sent! Check your inbox.");
+          } else {
+            showMessage(data.message, false);
+          }
+        } catch (error) {
+          console.error("❌ Password reset error:", error);
+          showMessage("An error occurred while sending reset email.", false);
+        }
+      }
+
+      // Google Sign-In
+      async function handleGoogleSignIn() {
+        try {
+          const result = await window.signInWithPopup(
+            window.firebaseAuth,
+            window.googleProvider
+          );
+          const user = result.user;
+
+          // Verify with backend
+          const response = await fetch(`${API_URL}/verify-oauth`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName,
+              photoURL: user.photoURL,
+              provider: "google",
+            }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            console.log("✅ Google login successful:", data);
+            showMessage("Google login successful! Welcome.");
+            showUserInfo(data.user);
+          } else {
+            showMessage(data.message, false);
+          }
+        } catch (error) {
+          console.error("❌ Google sign-in error:", error);
+          showMessage("Google sign-in failed: " + error.message, false);
+        }
+      }
+
+      // GitHub Sign-In
+      async function handleGithubSignIn() {
+        try {
+          const result = await window.signInWithPopup(
+            window.firebaseAuth,
+            window.githubProvider
+          );
+          const user = result.user;
+
+          // Verify with backend
+          const response = await fetch(`${API_URL}/verify-oauth`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName,
+              photoURL: user.photoURL,
+              provider: "github",
+            }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            console.log("✅ GitHub login successful:", data);
+            showMessage("GitHub login successful! Welcome.");
+            showUserInfo(data.user);
+          } else {
+            showMessage(data.message, false);
+          }
+        } catch (error) {
+          console.error("❌ GitHub sign-in error:", error);
+          showMessage("GitHub sign-in failed: " + error.message, false);
+        }
+      }
+
+      // Make functions globally available
+      window.showTab = showTab;
+      window.handleLogin = handleLogin;
+      window.handleSignup = handleSignup;
+      window.handleForgotPassword = handleForgotPassword;
+      window.handleGoogleSignIn = handleGoogleSignIn;
+      window.handleGithubSignIn = handleGithubSignIn;
+    </script>
+  </body>
+</html>

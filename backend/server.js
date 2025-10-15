@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 
 import graphRoutes from "./routes/graphRoutes.js";
 import dsRoutes from "./routes/dsRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -15,6 +16,7 @@ app.use(express.json());
 // Routes
 app.use("/api/graph", graphRoutes);
 app.use("/api/ds", dsRoutes);
+app.use("/api/auth", authRoutes);
 
 // Test route
 app.get("/", (req, res) => {
