@@ -1,10 +1,13 @@
-import { map } from "../utils/graphData.js";
+import { map as defaultMap } from "../utils/graphData.js";
 import dijkstra from "../core/dijkstra.js";
 import { saveSearchToHistory } from "./dsController.js";
+import { db } from "../config/firebaseConfig.js";
+import { doc, getDoc } from "firebase/firestore";
 
-export const findShortestPath = (req, res) => {
+// Find shortest path in a selected map (from DB or default)
+export const findShortestPath = async (req, res) => {
   try {
-    const { start, end } = req.body;
+    const { start, end, mapId } = req.body;
 
     if (!start || !end) {
       return res.status(400).json({
@@ -13,21 +16,33 @@ export const findShortestPath = (req, res) => {
       });
     }
 
-    if (!map[start]) {
+    let graph = defaultMap;
+    if (mapId) {
+      // Try to fetch map from Firestore
+      const mapRef = doc(db, "maps", mapId);
+      const mapSnap = await getDoc(mapRef);
+      if (!mapSnap.exists()) {
+        return res
+          .status(404)
+          .json({ success: false, error: `Map with id '${mapId}' not found` });
+      }
+      graph = mapSnap.data().graphData;
+    }
+
+    if (!graph[start]) {
       return res.status(400).json({
         success: false,
         error: `Start location '${start}' not found`,
       });
     }
-
-    if (!map[end]) {
+    if (!graph[end]) {
       return res.status(400).json({
         success: false,
         error: `End location '${end}' not found`,
       });
     }
 
-    const result = dijkstra(map, start, end);
+    const result = dijkstra(graph, start, end);
 
     if (result.error) {
       return res.status(404).json({
@@ -36,7 +51,6 @@ export const findShortestPath = (req, res) => {
         message: "No path found between the specified locations",
       });
     } else {
-
       const searchData = {
         start: start,
         destination: end,
@@ -47,9 +61,7 @@ export const findShortestPath = (req, res) => {
           nodesVisited: result.path.length,
         },
       };
-
       saveSearchToHistory(searchData);
-
       return res.status(200).json({
         success: true,
         message: "Shortest path found successfully",
