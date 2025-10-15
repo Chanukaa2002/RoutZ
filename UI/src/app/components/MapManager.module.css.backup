@@ -1,0 +1,450 @@
+.managerContainer {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.managerHeader {
+  margin-bottom: 32px;
+}
+
+.managerHeader h2 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+}
+
+.managerHeader p {
+  color: #666;
+  margin: 0;
+  font-size: 14px;
+}
+
+.successMessage {
+  background: #d4edda;
+  color: #155724;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #c3e6cb;
+  font-size: 14px;
+}
+
+.errorMessage {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #f5c6cb;
+  font-size: 14px;
+}
+
+.managerContent {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.canvasSection {
+  display: flex;
+  flex-direction: column;
+}
+
+.canvasHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.canvasHeader h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: #333;
+}
+
+.canvasInstructions {
+  display: flex;
+  gap: 20px;
+}
+
+.canvasInstructions p {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.canvasWrapper {
+  border: 3px solid #667eea;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f8f9fa;
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.1);
+}
+
+.canvas {
+  display: block;
+  cursor: crosshair;
+  width: 100%;
+  height: auto;
+}
+
+.canvasControls {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.clearButton,
+.deleteButton {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clearButton {
+  background: #6c757d;
+  color: white;
+}
+
+.clearButton:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+.deleteButton {
+  background: #ff4757;
+  color: white;
+}
+
+.deleteButton:hover {
+  background: #ee5a6f;
+  transform: translateY(-1px);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formCard,
+.infoCard {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e1e8ed;
+}
+
+.formCard h3,
+.infoCard h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: #333;
+}
+
+.formGroup {
+  margin-bottom: 16px;
+}
+
+.formGroup label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+}
+
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #e1e8ed;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.formActions {
+  display: flex;
+  gap: 8px;
+}
+
+.primaryButton,
+.secondaryButton,
+.saveButton {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+}
+
+.primaryButton {
+  background: #667eea;
+  color: white;
+}
+
+.primaryButton:hover {
+  background: #5568d3;
+  transform: translateY(-1px);
+}
+
+.secondaryButton {
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+}
+
+.secondaryButton:hover {
+  background: #f8f9fa;
+}
+
+.saveButton {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  width: 100%;
+}
+
+.saveButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.edgeInfo {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e1e8ed;
+}
+
+.edgeInfo strong {
+  color: #667eea;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e1e8ed;
+}
+
+.statLabel {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 4px;
+}
+
+.statValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.edgesList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.edgeItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 2px solid #e1e8ed;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.edgeItem:hover {
+  border-color: #667eea;
+  background: #f8f9fa;
+}
+
+.selectedEdge {
+  border-color: #ff4757 !important;
+  background: #fff5f7 !important;
+}
+
+.edgeDistance {
+  background: #667eea;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.savedMaps {
+  margin-top: 40px;
+  padding-top: 32px;
+  border-top: 2px solid #e1e8ed;
+}
+
+.savedMaps h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 20px 0;
+  color: #333;
+}
+
+.noMaps {
+  text-align: center;
+  color: #999;
+  padding: 40px 20px;
+  font-size: 14px;
+}
+
+.mapsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.mapCard {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border: 2px solid #e1e8ed;
+  transition: all 0.3s ease;
+}
+
+.mapCard:hover {
+  border-color: #667eea;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.mapHeader {
+  margin-bottom: 12px;
+}
+
+.mapHeader h4 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: #333;
+}
+
+.mapId {
+  font-size: 12px;
+  color: #999;
+  font-family: 'Courier New', monospace;
+}
+
+.mapStats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #666;
+}
+
+.mapActions {
+  display: flex;
+  gap: 8px;
+}
+
+.loadButton,
+.deleteMapButton {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.loadButton {
+  background: #667eea;
+  color: white;
+}
+
+.loadButton:hover {
+  background: #5568d3;
+  transform: translateY(-1px);
+}
+
+.deleteMapButton {
+  background: #ff4757;
+  color: white;
+}
+
+.deleteMapButton:hover {
+  background: #ee5a6f;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 1200px) {
+  .managerContent {
+    grid-template-columns: 1fr;
+  }
+
+  .mapsGrid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .managerContainer {
+    padding: 20px;
+  }
+
+  .canvasHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .canvasInstructions {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+}

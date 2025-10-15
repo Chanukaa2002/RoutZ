@@ -1,0 +1,138 @@
+.landingContainer {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.hero {
+  text-align: center;
+  max-width: 1200px;
+  width: 100%;
+}
+
+.logoSection {
+  margin-bottom: 60px;
+}
+
+.heroLogo {
+  margin-bottom: 20px;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
+}
+
+.heroTitle {
+  font-size: 72px;
+  font-weight: 800;
+  color: white;
+  margin: 0 0 20px 0;
+  text-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.heroSubtitle {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  font-weight: 300;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-bottom: 80px;
+}
+
+.primaryButton,
+.secondaryButton {
+  padding: 18px 48px;
+  font-size: 18px;
+  font-weight: 600;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.primaryButton {
+  background: white;
+  color: #667eea;
+}
+
+.primaryButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.secondaryButton {
+  background: transparent;
+  color: white;
+  border: 2px solid white;
+}
+
+.secondaryButton:hover {
+  background: white;
+  color: #667eea;
+  transform: translateY(-2px);
+}
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.featureCard {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 30px;
+  color: white;
+  transition: transform 0.3s ease;
+}
+
+.featureCard:hover {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.featureIcon {
+  font-size: 48px;
+  margin-bottom: 15px;
+}
+
+.featureCard h3 {
+  font-size: 22px;
+  margin: 0 0 10px 0;
+  font-weight: 600;
+}
+
+.featureCard p {
+  font-size: 16px;
+  margin: 0;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .heroTitle {
+    font-size: 48px;
+  }
+
+  .heroSubtitle {
+    font-size: 18px;
+  }
+
+  .buttonGroup {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .features {
+    grid-template-columns: 1fr;
+  }
+}

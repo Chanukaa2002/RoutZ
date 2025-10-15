@@ -300,13 +300,15 @@
       } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
       // Firebase configuration
+      // IMPORTANT: Do not hardcode secrets in production!
+      // Replace the following with your own config or load from a secure source.
       const firebaseConfig = {
-        apiKey: "AIzaSyB8x1Uzl518GL0TcAIFAZxgYqK7SP8NTdk",
-        authDomain: "routz-26b7e.firebaseapp.com",
-        projectId: "routz-26b7e",
-        storageBucket: "routz-26b7e.firebasestorage.app",
-        messagingSenderId: "876265950393",
-        appId: "1:876265950393:web:86e6e33239f3b52abb1f68",
+        apiKey: "YOUR_FIREBASE_API_KEY_HERE",
+        authDomain: "YOUR_FIREBASE_AUTH_DOMAIN",
+        projectId: "YOUR_FIREBASE_PROJECT_ID",
+        storageBucket: "YOUR_FIREBASE_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_FIREBASE_MESSAGING_SENDER_ID",
+        appId: "YOUR_FIREBASE_APP_ID",
       };
 
       const app = initializeApp(firebaseConfig);

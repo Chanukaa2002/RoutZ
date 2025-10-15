@@ -1,0 +1,237 @@
+import React, { useRef, useState, useEffect } from "react";
+import styles from "./MapVisualization.module.css";
+
+// Helper to draw nodes and edges
+function drawGraph(ctx, nodes, edges, selectedNode) {
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  // Draw edges
+  edges.forEach(({ from, to }) => {
+    const n1 = nodes.find((n) => n.id === from);
+    const n2 = nodes.find((n) => n.id === to);
+    if (n1 && n2) {
+      ctx.beginPath();
+      ctx.moveTo(n1.x, n1.y);
+      ctx.lineTo(n2.x, n2.y);
+      ctx.strokeStyle = "#667eea";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  });
+  // Draw nodes
+  nodes.forEach((node) => {
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, 22, 0, 2 * Math.PI);
+    ctx.fillStyle = node.id === selectedNode ? "#667eea" : "#fff";
+    ctx.strokeStyle = "#667eea";
+    ctx.lineWidth = 3;
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = node.id === selectedNode ? "#fff" : "#667eea";
+    ctx.font = "bold 16px Segoe UI";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(node.label, node.x, node.y);
+  });
+}
+
+export default function MapManager({ user, idToken }) {
+  const canvasRef = useRef(null);
+  const [nodes, setNodes] = useState([]);
+  const [edges, setEdges] = useState([]);
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [mapName, setMapName] = useState("");
+  const [mapId, setMapId] = useState("");
+  const [maps, setMaps] = useState([]);
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [edgeStart, setEdgeStart] = useState(null);
+
+  // Draw graph on canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    drawGraph(ctx, nodes, edges, selectedNode);
+  }, [nodes, edges, selectedNode]);
+
+  // Add node on canvas click
+  function handleCanvasClick(e) {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    // Check if clicked on a node
+    const clicked = nodes.find(
+      (n) => Math.hypot(n.x - x, n.y - y) < 25
+    );
+    if (clicked) {
+      if (edgeStart && edgeStart !== clicked.id) {
+        // Add edge
+        setEdges((eds) => [
+          ...eds,
+          { from: edgeStart, to: clicked.id },
+        ]);
+        setEdgeStart(null);
+      } else {
+        setEdgeStart(clicked.id);
+      }
+      setSelectedNode(clicked.id);
+    } else {
+      // Add new node
+      const newId = `N${nodes.length + 1}`;
+      setNodes((nds) => [
+        ...nds,
+        { id: newId, label: newId, x, y },
+      ]);
+      setSelectedNode(newId);
+      setEdgeStart(null);
+    }
+  }
+
+  // Remove selected node
+  function removeNode() {
+    if (!selectedNode) return;
+    setNodes((nds) => nds.filter((n) => n.id !== selectedNode));
+    setEdges((eds) => eds.filter((e) => e.from !== selectedNode && e.to !== selectedNode));
+    setSelectedNode(null);
+  }
+
+  // Remove selected edge
+  function removeEdge() {
+    if (!selectedNode) return;
+    setEdges((eds) => eds.filter((e) => e.from !== selectedNode && e.to !== selectedNode));
+  }
+
+  // Save map to backend
+  async function saveMap() {
+    if (!mapId || !mapName || nodes.length < 2) {
+      setMessage("Map ID, name, and at least 2 nodes required");
+      return;
+    }
+    // Convert to adjacency list
+    const graphData = {};
+    nodes.forEach((n) => {
+      graphData[n.label] = {};
+    });
+    edges.forEach((e) => {
+      const n1 = nodes.find((n) => n.id === e.from);
+      const n2 = nodes.find((n) => n.id === e.to);
+      if (n1 && n2) {
+        graphData[n1.label][n2.label] = 1;
+        graphData[n2.label][n1.label] = 1;
+      }
+    });
+    setLoading(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/graph/add-map", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ mapId, mapName, graphData }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage("Map saved!");
+        fetchMaps();
+      } else {
+        setMessage(data.message || "Failed to save map");
+      }
+    } catch (e) {
+      setMessage("Error saving map");
+    }
+    setLoading(false);
+  }
+
+  // Fetch maps owned by this admin
+  async function fetchMaps() {
+    setLoading(true);
+    setMessage("");
+    try {
+      // This assumes you have a /api/graph/my-maps endpoint (implement if needed)
+      const res = await fetch(`/api/graph/my-maps?uid=${user.uid}`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      const data = await res.json();
+      if (data.success) setMaps(data.maps);
+      else setMaps([]);
+    } catch {
+      setMaps([]);
+    }
+    setLoading(false);
+  }
+
+  // Delete a map
+  async function deleteMap(id) {
+    setLoading(true);
+    setMessage("");
+    try {
+      const res = await fetch(`/api/graph/delete-map/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage("Map deleted");
+        fetchMaps();
+      } else {
+        setMessage(data.message || "Failed to delete");
+      }
+    } catch {
+      setMessage("Error deleting map");
+    }
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    if (user && idToken) fetchMaps();
+    // eslint-disable-next-line
+  }, [user, idToken]);
+
+  return (
+    <div className={styles.mapManagerBox}>
+      <h2>🗺️ Map Manager</h2>
+      <div style={{ display: "flex", gap: 24 }}>
+        <div>
+          <canvas
+            ref={canvasRef}
+            width={400}
+            height={400}
+            className={styles.mapCanvas}
+            onClick={handleCanvasClick}
+            style={{ border: "2px solid #667eea", borderRadius: 12, background: "#f8f9fa" }}
+          />
+          <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+            <button onClick={removeNode} disabled={!selectedNode}>Remove Node</button>
+            <button onClick={removeEdge} disabled={!selectedNode}>Remove Edges</button>
+          </div>
+        </div>
+        <div style={{ flex: 1 }}>
+          <div>
+            <label>Map Name</label>
+            <input value={mapName} onChange={e => setMapName(e.target.value)} placeholder="Map Name" />
+          </div>
+          <div>
+            <label>Map ID</label>
+            <input value={mapId} onChange={e => setMapId(e.target.value)} placeholder="Unique ID" />
+          </div>
+          <button onClick={saveMap} disabled={loading}>Save Map</button>
+          {message && <div style={{ marginTop: 10, color: "#667eea" }}>{message}</div>}
+        </div>
+      </div>
+      <hr style={{ margin: "24px 0" }} />
+      <h3>My Maps</h3>
+      {loading ? <div>Loading...</div> : (
+        <ul>
+          {maps.map((m) => (
+            <li key={m.mapId}>
+              <b>{m.mapName}</b> (ID: {m.mapId})
+              <button onClick={() => deleteMap(m.mapId)} style={{ marginLeft: 8 }}>Delete</button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}

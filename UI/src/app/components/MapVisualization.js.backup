@@ -1,0 +1,759 @@
+import { useEffect, useRef, useState, useMemo } from "react";
+import styles from "./MapVisualization.module.css";
+
+// Seeded random number generator for deterministic layouts
+function seededRandom(seed) {
+  const x = Math.sin(seed++) * 10000;
+  return x - Math.floor(x);
+}
+
+const MapVisualization = ({ route, locations, selectedStart, selectedEnd, mapData }) => {
+  const canvasRef = useRef(null);
+  const [hoveredLocation, setHoveredLocation] = useState(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [isLayoutReady, setIsLayoutReady] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Ensure component only renders on client
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Use mapData if provided, otherwise use hardcoded connections as fallback
+  const connections = useMemo(() => {
+    if (mapData && mapData.graphData) {
+      return mapData.graphData;
+    }
+    
+    // Fallback to default hardcoded map
+    return {
+      "Main Hall": {
+        Library: 2,
+        Cafeteria: 3,
+        "Lab Block": 4,
+        Auditorium: 5,
+        "Admin Office": 3,
+        "Student Center": 4,
+      },
+      Library: {
+        "Main Hall": 2,
+        "Admin Office": 3,
+        "Study Rooms": 2,
+        "Computer Lab": 4,
+      },
+      "Lab Block": {
+        "Main Hall": 4,
+        Gym: 2,
+        "Computer Lab": 3,
+        "Engineering Building": 5,
+        "Science Building": 4,
+      },
+      "Computer Lab": {
+        Library: 4,
+        "Lab Block": 3,
+        "Engineering Building": 2,
+        "Study Rooms": 3,
+      },
+      "Engineering Building": {
+        "Lab Block": 5,
+        "Computer Lab": 2,
+        "Science Building": 3,
+        Workshop: 4,
+      },
+      "Science Building": {
+        "Lab Block": 4,
+        "Engineering Building": 3,
+        "Medical Center": 6,
+        "Research Center": 4,
+      },
+      Cafeteria: {
+        "Main Hall": 3,
+        "Student Center": 2,
+        Gym: 4,
+        Dormitory: 5,
+      },
+      "Student Center": {
+        "Main Hall": 4,
+        Cafeteria: 2,
+        Auditorium: 3,
+        Dormitory: 4,
+        "Sports Complex": 6,
+      },
+      Gym: {
+        "Lab Block": 2,
+        "Parking Lot": 3,
+        Cafeteria: 4,
+        "Sports Complex": 2,
+      },
+      "Sports Complex": {
+        Gym: 2,
+        "Student Center": 6,
+        "Parking Lot": 4,
+        Dormitory: 5,
+      },
+      "Admin Office": {
+        Library: 3,
+        "Main Hall": 3,
+        "Medical Center": 4,
+      },
+      "Medical Center": {
+        "Admin Office": 4,
+        "Science Building": 6,
+        Dormitory: 3,
+      },
+      Auditorium: {
+        "Main Hall": 5,
+        "Student Center": 3,
+      },
+      "Study Rooms": {
+        Library: 2,
+        "Computer Lab": 3,
+      },
+      Workshop: {
+        "Engineering Building": 4,
+      },
+      "Research Center": {
+        "Science Building": 4,
+      },
+      Dormitory: {
+        Cafeteria: 5,
+        "Student Center": 4,
+        "Sports Complex": 5,
+        "Medical Center": 3,
+        "Parking Lot": 6,
+      },
+      "Parking Lot": {
+        Gym: 3,
+        "Sports Complex": 4,
+        Dormitory: 6,
+      },
+    };
+  }, [mapData]);
+
+  // Convert connections to edges array
+  const edges = useMemo(() => {
+    const edgesList = [];
+    const processed = new Set();
+
+    Object.keys(connections).forEach((from) => {
+      Object.keys(connections[from]).forEach((to) => {
+        const edgeKey = [from, to].sort().join("-");
+        if (!processed.has(edgeKey)) {
+          edgesList.push({
+            from,
+            to,
+            weight: connections[from][to],
+          });
+          processed.add(edgeKey);
+        }
+      });
+    });
+
+    return edgesList;
+  }, [connections]);
+
+  const locationCoords = useMemo(() => {
+    if (!locations || locations.length === 0) return {};
+
+    setIsLayoutReady(false);
+
+    const nodes = {};
+    const edgesForLayout = [];
+
+    locations.forEach((location, index) => {
+      if (location === "Main Hall") {
+        nodes[location] = { x: 700, y: 500, vx: 0, vy: 0 };
+      } else {
+        const angle = (index / locations.length) * 2 * Math.PI;
+        const ringRadius = 150 + (index % 3) * 200;
+        // Use deterministic seeded random based on location name
+        const seed = location.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        nodes[location] = {
+          x: 700 + ringRadius * Math.cos(angle) + (seededRandom(seed) - 0.5) * 300,
+          y: 500 + ringRadius * Math.sin(angle) + (seededRandom(seed + 1) - 0.5) * 200,
+          vx: 0,
+          vy: 0,
+        };
+      }
+    });
+
+    edges.forEach((conn) => {
+      edgesForLayout.push({
+        source: conn.from,
+        target: conn.to,
+        weight: conn.weight,
+        idealDistance: 100 + conn.weight * conn.weight * 20,
+      });
+    });
+
+    const iterations = 400;
+    const damping = 0.8;
+    const repulsionStrength = 50000; 
+    const attractionStrength = 0.02;
+    const centerForce = 0.0003;
+
+    for (let iter = 0; iter < iterations; iter++) {
+      // Calculate forces for each node
+      Object.keys(nodes).forEach((nodeA) => {
+        let fx = 0;
+        let fy = 0;
+
+        Object.keys(nodes).forEach((nodeB) => {
+          if (nodeA !== nodeB) {
+            const dx = nodes[nodeA].x - nodes[nodeB].x;
+            const dy = nodes[nodeA].y - nodes[nodeB].y;
+            const distance = Math.sqrt(dx * dx + dy * dy) || 1;
+
+            const force =
+              repulsionStrength / Math.max(distance * distance, 100);
+
+            fx += (dx / distance) * force;
+            fy += (dy / distance) * force;
+          }
+        });
+        edgesForLayout.forEach((edge) => {
+          if (edge.source === nodeA || edge.target === nodeA) {
+            const otherNode = edge.source === nodeA ? edge.target : edge.source;
+            if (nodes[otherNode]) {
+              const dx = nodes[otherNode].x - nodes[nodeA].x;
+              const dy = nodes[otherNode].y - nodes[nodeA].y;
+              const distance = Math.sqrt(dx * dx + dy * dy) || 1;
+
+              const displacement = distance - edge.idealDistance;
+              const force = attractionStrength * displacement;
+
+              fx += (dx / distance) * force;
+              fy += (dy / distance) * force;
+            }
+          }
+        });
+
+        const centerX = 700;
+        const centerY = 500;
+        fx += (centerX - nodes[nodeA].x) * centerForce;
+        fy += (centerY - nodes[nodeA].y) * centerForce;
+
+        nodes[nodeA].vx = (nodes[nodeA].vx + fx * 0.1) * damping;
+        nodes[nodeA].vy = (nodes[nodeA].vy + fy * 0.1) * damping;
+
+        nodes[nodeA].x += nodes[nodeA].vx;
+        nodes[nodeA].y += nodes[nodeA].vy;
+
+        nodes[nodeA].x = Math.max(50, Math.min(1150, nodes[nodeA].x));
+        nodes[nodeA].y = Math.max(50, Math.min(850, nodes[nodeA].y));
+      });
+    }
+
+    const result = {};
+    Object.keys(nodes).forEach((node) => {
+      result[node] = {
+        x: Math.round(nodes[node].x),
+        y: Math.round(nodes[node].y),
+      };
+    });
+
+    console.log(
+      `Generated layout for ${Object.keys(result).length} nodes with ${
+        edgesForLayout.length
+      } edges`
+    );
+    console.log("Sample positions:", Object.entries(result).slice(0, 3));
+
+    setTimeout(() => setIsLayoutReady(true), 100);
+    return result;
+  }, [locations, edges]);
+
+  useEffect(() => {
+    if (!canvasRef.current || !locationCoords) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    canvas.width = 1400;
+    canvas.height = 1000;
+
+    if (
+      !route &&
+      selectedStart &&
+      selectedEnd &&
+      selectedStart !== selectedEnd
+    ) {
+      const startCoords = locationCoords[selectedStart];
+      const endCoords = locationCoords[selectedEnd];
+
+      if (startCoords && endCoords) {
+        ctx.beginPath();
+        ctx.setLineDash([8, 8]); // Dashed line
+        ctx.moveTo(startCoords.x, startCoords.y);
+        ctx.lineTo(endCoords.x, endCoords.y);
+        ctx.strokeStyle = "#94a3b8";
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.6;
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset to solid line
+        ctx.globalAlpha = 1;
+
+        const directDistance = Math.sqrt(
+          Math.pow(endCoords.x - startCoords.x, 2) +
+            Math.pow(endCoords.y - startCoords.y, 2)
+        ).toFixed(0);
+
+        const midX = (startCoords.x + endCoords.x) / 2;
+        const midY = (startCoords.y + endCoords.y) / 2;
+
+        // Draw distance background
+        ctx.beginPath();
+        ctx.arc(midX, midY, 15, 0, 2 * Math.PI);
+        ctx.fillStyle = "#f8fafc";
+        ctx.fill();
+        ctx.strokeStyle = "#94a3b8";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Draw distance text
+        ctx.fillStyle = "#475569";
+        ctx.font = "bold 10px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("?", midX, midY + 3);
+      }
+    }
+
+    edges.forEach((conn) => {
+      const from = locationCoords[conn.from];
+      const to = locationCoords[conn.to];
+
+      if (from && to) {
+        const isPathEdge =
+          route && isEdgeInPath(conn.from, conn.to, route.path);
+
+        const isPreviewEdge =
+          !route &&
+          (selectedStart || selectedEnd) &&
+          (conn.from === selectedStart ||
+            conn.to === selectedStart ||
+            conn.from === selectedEnd ||
+            conn.to === selectedEnd);
+
+        const actualDistance = Math.sqrt(
+          Math.pow(to.x - from.x, 2) + Math.pow(to.y - from.y, 2)
+        );
+
+        ctx.beginPath();
+        ctx.moveTo(from.x, from.y);
+        ctx.lineTo(to.x, to.y);
+
+        if (isPathEdge) {
+          ctx.strokeStyle = "#7c3aed";
+          ctx.lineWidth = 6;
+          ctx.shadowColor = "#7c3aed";
+          ctx.shadowBlur = 12;
+        } else if (isPreviewEdge) {
+          const weightNormalized = (conn.weight - 2) / (6 - 2);
+          const hue = 120 - weightNormalized * 60;
+          ctx.strokeStyle = `hsl(${hue}, 70%, 45%)`;
+          ctx.lineWidth = 3 + conn.weight * 0.3;
+          ctx.shadowColor = ctx.strokeStyle;
+          ctx.shadowBlur = 4;
+        } else if (route) {
+          const weightNormalized = (conn.weight - 2) / (6 - 2);
+          const hue = 120 - weightNormalized * 60;
+          ctx.strokeStyle = `hsl(${hue}, 20%, 75%)`;
+          ctx.lineWidth = 1 + conn.weight * 0.2;
+          ctx.shadowBlur = 0;
+        } else {
+          const weightNormalized = (conn.weight - 2) / (6 - 2);
+          const hue = 120 - weightNormalized * 60;
+          ctx.strokeStyle = `hsl(${hue}, 60%, 50%)`;
+          ctx.lineWidth = 2 + conn.weight * 0.5;
+          ctx.shadowBlur = 0;
+        }
+
+        ctx.stroke();
+
+        const midX = (from.x + to.x) / 2;
+        const midY = (from.y + to.y) / 2;
+
+        ctx.beginPath();
+        const badgeRadius = isPathEdge ? 20 : isPreviewEdge ? 18 : 16;
+        ctx.arc(midX, midY, badgeRadius, 0, 2 * Math.PI);
+
+        if (isPathEdge) {
+          ctx.fillStyle = "#ffffff";
+          ctx.strokeStyle = "#7c3aed";
+        } else if (isPreviewEdge) {
+          const hue = 120 - (conn.weight - 2) * 20;
+          ctx.fillStyle = "#ffffff";
+          ctx.strokeStyle = `hsl(${hue}, 70%, 45%)`;
+        } else if (route) {
+          const hue = 120 - (conn.weight - 2) * 20;
+          ctx.fillStyle = `hsl(${hue}, 15%, 95%)`;
+          ctx.strokeStyle = `hsl(${hue}, 20%, 80%)`;
+        } else {
+          const hue = 120 - (conn.weight - 2) * 20;
+          ctx.fillStyle = `hsl(${hue}, 50%, 95%)`;
+          ctx.strokeStyle = `hsl(${hue}, 50%, 70%)`;
+        }
+
+        ctx.fill();
+        ctx.lineWidth = isPathEdge ? 2.5 : isPreviewEdge ? 2 : 1.5;
+        ctx.stroke();
+
+        if (isPathEdge) {
+          ctx.fillStyle = "#7c3aed";
+          ctx.font = "bold 14px Arial";
+        } else if (isPreviewEdge) {
+          ctx.fillStyle = "#374151";
+          ctx.font = "bold 13px Arial";
+        } else if (route) {
+          ctx.fillStyle = "#9ca3af";
+          ctx.font = "11px Arial";
+        } else {
+          ctx.fillStyle = "#374151";
+          ctx.font = "bold 12px Arial";
+        }
+
+        ctx.textAlign = "center";
+        ctx.fillText(conn.weight.toString(), midX, midY + 4);
+
+        if (
+          !isPathEdge &&
+          hoveredLocation &&
+          (conn.from === hoveredLocation || conn.to === hoveredLocation)
+        ) {
+          ctx.font = "8px Arial";
+          ctx.fillStyle = "#6b7280";
+          ctx.fillText(`${Math.round(actualDistance)}px`, midX, midY - 18);
+        }
+      }
+    });
+
+    Object.entries(locationCoords).forEach(([location, coords]) => {
+      const isStart =
+        (route && route.start === location) || selectedStart === location;
+      const isEnd =
+        (route && route.end === location) || selectedEnd === location;
+      const isInPath = route && route.path.includes(location);
+      const isSelected = selectedStart === location || selectedEnd === location;
+      const isConnectedToSelected =
+        !route &&
+        (selectedStart || selectedEnd) &&
+        connections.some(
+          (conn) =>
+            (conn.from === location &&
+              (conn.to === selectedStart || conn.to === selectedEnd)) ||
+            (conn.to === location &&
+              (conn.from === selectedStart || conn.from === selectedEnd))
+        );
+
+      const nodeRadius =
+        isStart || isEnd ? 35 : isInPath ? 32 : isConnectedToSelected ? 32 : 30;
+
+      ctx.beginPath();
+      ctx.arc(coords.x, coords.y, nodeRadius, 0, 2 * Math.PI);
+
+      if (isStart) {
+        ctx.fillStyle = route ? "#10b981" : "#22c55e";
+        ctx.shadowColor = route ? "#10b981" : "#22c55e";
+        ctx.shadowBlur = 15;
+      } else if (isEnd) {
+        ctx.fillStyle = route ? "#ef4444" : "#f87171";
+        ctx.shadowColor = route ? "#ef4444" : "#f87171";
+        ctx.shadowBlur = 15;
+      } else if (isInPath) {
+        ctx.fillStyle = "#7c3aed";
+        ctx.shadowColor = "#7c3aed";
+        ctx.shadowBlur = 10;
+      } else if (isConnectedToSelected) {
+        ctx.fillStyle = "#fbbf24";
+        ctx.shadowColor = "#fbbf24";
+        ctx.shadowBlur = 8;
+      } else if (isSelected) {
+        ctx.fillStyle = "#fbbf24";
+        ctx.shadowColor = "#fbbf24";
+        ctx.shadowBlur = 8;
+      } else if (route) {
+        ctx.fillStyle = "#e5e7eb";
+        ctx.shadowBlur = 0;
+      } else {
+        ctx.fillStyle = "#f3f4f6";
+        ctx.shadowBlur = 0;
+      }
+
+      ctx.fill();
+
+      ctx.strokeStyle =
+        isStart || isEnd || isInPath || isSelected ? "#ffffff" : "#d1d5db";
+      ctx.lineWidth = isSelected && !route ? 3 : 2;
+      ctx.stroke();
+      ctx.fillStyle =
+        isStart || isEnd || isInPath || isSelected ? "#ffffff" : "#374151";
+      ctx.font = "bold 12px Arial";
+      ctx.textAlign = "center";
+      ctx.shadowBlur = 0;
+
+      const words = location.split(" ");
+      if (words.length > 1) {
+        ctx.fillText(words[0], coords.x, coords.y - 4);
+        ctx.fillText(words[1], coords.x, coords.y + 10);
+      } else {
+        ctx.fillText(location, coords.x, coords.y + 4);
+      }
+    });
+
+    if (route && route.path.length > 1) {
+      drawPathArrows(ctx, route.path);
+      drawPathStepNumbers(ctx, route.path);
+    }
+  }, [route, selectedStart, selectedEnd, locationCoords, connections]);
+
+  const isEdgeInPath = (from, to, path) => {
+    if (!path || path.length < 2) return false;
+
+    for (let i = 0; i < path.length - 1; i++) {
+      if (
+        (path[i] === from && path[i + 1] === to) ||
+        (path[i] === to && path[i + 1] === from)
+      ) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const drawPathArrows = (ctx, path) => {
+    for (let i = 0; i < path.length - 1; i++) {
+      const from = locationCoords[path[i]];
+      const to = locationCoords[path[i + 1]];
+
+      if (from && to) {
+        const arrowX = from.x + 0.7 * (to.x - from.x);
+        const arrowY = from.y + 0.7 * (to.y - from.y);
+
+        // Calculate arrow angle
+        const angle = Math.atan2(to.y - from.y, to.x - from.x);
+
+        ctx.save();
+        ctx.translate(arrowX, arrowY);
+        ctx.rotate(angle);
+
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-18, -10);
+        ctx.lineTo(-18, 10);
+        ctx.closePath();
+
+        ctx.fillStyle = "#7c3aed";
+        ctx.shadowColor = "#7c3aed";
+        ctx.shadowBlur = 8;
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+  };
+
+  const drawPathStepNumbers = (ctx, path) => {
+    path.forEach((location, index) => {
+      const coords = locationCoords[location];
+      if (coords && index > 0 && index < path.length - 1) {
+        ctx.beginPath();
+        ctx.arc(coords.x + 25, coords.y - 25, 12, 0, 2 * Math.PI);
+        ctx.fillStyle = "#7c3aed";
+        ctx.fill();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 11px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText((index + 1).toString(), coords.x + 25, coords.y - 21);
+      }
+    });
+  };
+
+  const handleMouseMove = (event) => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const mouseX = (event.clientX - rect.left) * scaleX;
+    const mouseY = (event.clientY - rect.top) * scaleY;
+
+    setMousePos({ x: event.clientX, y: event.clientY });
+
+    let foundLocation = null;
+    Object.entries(locationCoords).forEach(([location, coords]) => {
+      const distance = Math.sqrt(
+        Math.pow(mouseX - coords.x, 2) + Math.pow(mouseY - coords.y, 2)
+      );
+      if (distance <= 30) {
+        foundLocation = location;
+      }
+    });
+
+    setHoveredLocation(foundLocation);
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredLocation(null);
+  };
+
+  const getRouteSegments = (path) => {
+    if (!path || path.length < 2) return "";
+
+    const segments = [];
+    for (let i = 0; i < path.length - 1; i++) {
+      const from = path[i];
+      const to = path[i + 1];
+      const connection = connections.find(
+        (conn) =>
+          (conn.from === from && conn.to === to) ||
+          (conn.from === to && conn.to === from)
+      );
+      if (connection) {
+        segments.push(`${from} →(${connection.weight})→ ${to}`);
+      }
+    }
+    return segments.join(" | ");
+  };
+
+  // Don't render on server to prevent hydration errors
+  if (!isMounted) {
+    return null;
+  }
+
+  return (
+    <div className={styles.mapContainer}>
+      <div className={styles.mapHeader}>
+        <h3>
+          Campus Map {!isLayoutReady && "(Calculating optimal layout...)"}
+        </h3>
+        <div className={styles.mapLegend}>
+          <div className={styles.legendItem}>
+            <div
+              className={styles.legendColor}
+              style={{ backgroundColor: route ? "#10b981" : "#22c55e" }}
+            ></div>
+            <span>Start {selectedStart && !route && "(Selected)"}</span>
+          </div>
+          <div className={styles.legendItem}>
+            <div
+              className={styles.legendColor}
+              style={{ backgroundColor: route ? "#ef4444" : "#f87171" }}
+            ></div>
+            <span>End {selectedEnd && !route && "(Selected)"}</span>
+          </div>
+          {route && (
+            <div className={styles.legendItem}>
+              <div
+                className={styles.legendColor}
+                style={{ backgroundColor: "#7c3aed" }}
+              ></div>
+              <span>Optimal Path</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className={styles.canvasContainer}>
+        <canvas
+          ref={canvasRef}
+          className={styles.mapCanvas}
+          width={1400}
+          height={1000}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          style={{ opacity: isLayoutReady ? 1 : 0.7 }}
+        />
+
+        {!isLayoutReady && (
+          <div className={styles.loadingOverlay}>
+            <div className={styles.loadingSpinner}></div>
+            <p>Positioning nodes based on connection weights...</p>
+          </div>
+        )}
+
+        {hoveredLocation && (
+          <div
+            className={styles.tooltip}
+            style={{
+              left: mousePos.x + 10,
+              top: mousePos.y - 10,
+            }}
+          >
+            <div className={styles.tooltipHeader}>{hoveredLocation}</div>
+            {(route && route.path.includes(hoveredLocation)) ||
+            selectedStart === hoveredLocation ||
+            selectedEnd === hoveredLocation ? (
+              <div className={styles.tooltipContent}>
+                {((route && route.start === hoveredLocation) ||
+                  selectedStart === hoveredLocation) &&
+                  "🚩 Start Location"}
+                {((route && route.end === hoveredLocation) ||
+                  selectedEnd === hoveredLocation) &&
+                  "🏁 End Location"}
+                {route &&
+                  route.start !== hoveredLocation &&
+                  route.end !== hoveredLocation &&
+                  route.path.includes(hoveredLocation) &&
+                  "📍 On Route"}
+                {!route &&
+                  selectedStart !== hoveredLocation &&
+                  selectedEnd !== hoveredLocation &&
+                  (selectedStart === hoveredLocation ||
+                    selectedEnd === hoveredLocation) &&
+                  "⭐ Selected"}
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
+
+      <div className={styles.mapStats}>
+        <div className={styles.statsGrid}>
+          <div className={styles.statItem}>
+            <div className={styles.statValue}>
+              {Object.keys(locationCoords).length}
+            </div>
+            <div className={styles.statLabel}>Locations</div>
+          </div>
+          <div className={styles.statItem}>
+            <div className={styles.statValue}>{connections.length}</div>
+            <div className={styles.statLabel}>Connections</div>
+          </div>
+          {route && (
+            <>
+              <div className={styles.statItem}>
+                <div className={styles.statValue}>{route.distance}</div>
+                <div className={styles.statLabel}>Distance (units)</div>
+              </div>
+              <div className={styles.statItem}>
+                <div className={styles.statValue}>{route.path.length}</div>
+                <div className={styles.statLabel}>Stops</div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {route && (
+          <div className={styles.routeInfo}>
+            <div className={styles.routeDetail}>
+              <strong>Optimal Route:</strong> {route.path.join(" → ")}
+            </div>
+            <div className={styles.routeDetail}>
+              <strong>Total Steps:</strong> {route.path.length} locations
+            </div>
+            <div className={styles.routeDetail}>
+              <strong>Path Segments:</strong> {getRouteSegments(route.path)}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default MapVisualization;
