@@ -23,7 +23,10 @@ app.get("/", (req, res) => {
   res.json({ message: "FindFast API Server is running!" });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📍 API endpoints available at http://localhost:${PORT}/api`);
-});
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+    });
+}
+
+export default app;

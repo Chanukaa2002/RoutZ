@@ -15,8 +15,10 @@ const MapVisualization = dynamic(
   }
 );
 
-const API_BASE_URL = "http://localhost:5001/api";
-// const API_BASE_URL = "https://rout-z-bjil.vercel.app/api";
+// const API_BASE_URL = "http://localhost:5001/api";
+const API_BASE_URL = process.env.NODE_ENV === 'development' 
+  ? "http://localhost:5001/api" 
+  : "/api";
 
 export default function UserPage() {
   const [startLocation, setStartLocation] = useState("");
